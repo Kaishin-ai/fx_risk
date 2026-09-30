@@ -1,0 +1,10 @@
+# 仮想環境
+.venv/
+__pycache__/
+
+# 秘密情報（Phase 1 以降で DB接続情報・LINEトークンを入れる）
+.env
+
+# 再生成できる成果物
+data/
+output/
