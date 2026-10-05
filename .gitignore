@@ -8,3 +8,6 @@ __pycache__/
 # 再生成できる成果物
 data/
 output/
+
+# macOS
+.DS_Store

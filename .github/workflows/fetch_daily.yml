@@ -1,0 +1,23 @@
+# GitHub Actions: fetch_daily.py を GitHub のコンピュータ上で実行する設定
+name: fetch-daily
+
+on:
+  workflow_dispatch:  # GitHub の画面の「Run workflow」ボタンから手動で実行できるようにする
+  # 毎日の自動実行（schedule）は、手動実行で動作を確かめてから追加する
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest   # GitHub が用意する Linux のコンピュータを1台借りる
+    timeout-minutes: 10      # 何かで固まっても10分で打ち切る（無料枠を無駄にしない）
+    steps:
+      - uses: actions/checkout@v4          # このリポジトリのコードを借りたコンピュータにコピー
+      - uses: actions/setup-python@v5      # Python を用意
+        with:
+          python-version: "3.14"           # 手元の .venv と同じバージョン
+          cache: pip                       # ライブラリのダウンロードを次回から使い回して速くする
+      - run: pip install -r requirements.txt
+      - run: python fetch_daily.py
+        env:
+          # 接続文字列は GitHub の Secrets（暗号化された保管場所）から渡す。
+          # コードにもログにも中身は出ない（ログに出そうになっても *** に伏せられる）
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
