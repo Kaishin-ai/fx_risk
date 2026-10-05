@@ -1,14 +1,29 @@
-# GitHub Actions: fetch_daily.py を GitHub のコンピュータ上で実行する設定
+# GitHub Actions: fetch_daily.py を GitHub のコンピュータ上で毎日実行する設定
 name: fetch-daily
 
 on:
+  schedule:
+    # 毎日 22:00 UTC ＝ 日本時間 7:00。欧州中央銀行の公表（日本時間0時ごろ）の後なので前日分を取れる
+    # 書式は「分 時 日 月 曜日」、* は「毎」。GitHub が混んでいると数十分〜数時間遅れることがある
+    - cron: "0 22 * * *"
   workflow_dispatch:  # GitHub の画面の「Run workflow」ボタンから手動で実行できるようにする
-  # 毎日の自動実行（schedule）は、手動実行で動作を確かめてから追加する
+    inputs:
+      update_status:
+        description: "STATUS.md を今すぐ更新する（通常は毎月1日だけ）"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write  # STATUS.md をコミットするために、このリポジトリへの書き込みを許可する
 
 jobs:
   fetch:
     runs-on: ubuntu-latest   # GitHub が用意する Linux のコンピュータを1台借りる
     timeout-minutes: 10      # 何かで固まっても10分で打ち切る（無料枠を無駄にしない）
+    env:
+      # 接続文字列は GitHub の Secrets（暗号化された保管場所）から渡す。
+      # コードにもログにも中身は出ない（ログに出そうになっても *** に伏せられる）
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v5          # このリポジトリのコードを借りたコンピュータにコピー
       - uses: actions/setup-python@v6      # Python を用意
@@ -16,8 +31,24 @@ jobs:
           python-version: "3.14"           # 手元の .venv と同じバージョン
           cache: pip                       # ライブラリのダウンロードを次回から使い回して速くする
       - run: pip install -r requirements.txt
-      - run: python fetch_daily.py
+
+      - name: 為替レートを取得してDBに保存
+        run: python fetch_daily.py
+
+      # 公開リポジトリは60日間コミットが無いと schedule が止まる。月1回コミットしてそれを防ぐ
+      # （上の取得が失敗した日は、ここは実行されない）
+      - name: 稼働状況を STATUS.md に書いてコミット（毎月1日、または手動で指定したとき）
         env:
-          # 接続文字列は GitHub の Secrets（暗号化された保管場所）から渡す。
-          # コードにもログにも中身は出ない（ログに出そうになっても *** に伏せられる）
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FORCE: ${{ inputs.update_status }}  # 手動実行で「更新する」にチェックしたら true
+        run: |
+          if [ "$(TZ=Asia/Tokyo date +%d)" != "01" ] && [ "$FORCE" != "true" ]; then
+            echo "今日は更新日ではないのでスキップ"
+            exit 0
+          fi
+          python write_status.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add STATUS.md
+          git commit -m "稼働状況を更新 $(TZ=Asia/Tokyo date +%F)" || { echo "変更なし"; exit 0; }
+          git pull --rebase   # 手元から push された変更があっても衝突しないよう、先に取り込む
+          git push

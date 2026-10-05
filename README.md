@@ -13,7 +13,7 @@
 | Phase | 内容 | 状態 |
 |---|---|---|
 | 0 | USD/JPY の取得、日次対数収益率の分布とボラティリティの推移を可視化 | ✅ `phase0_explore.py` |
-| 1 | PostgreSQL 化＋毎日1回の自動取得（GitHub Actions / Neon） | 🚧 |
+| 1 | PostgreSQL 化＋毎日1回の自動取得（GitHub Actions / Neon） | ✅ `fetch_daily.py`（稼働状況は [STATUS.md](STATUS.md)） |
 | 2 | モンテカルロ、積立シミュレーション、Web画面、答え合わせ | — |
 
 ## データ
