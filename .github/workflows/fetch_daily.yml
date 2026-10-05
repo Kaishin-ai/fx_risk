@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest   # GitHub が用意する Linux のコンピュータを1台借りる
     timeout-minutes: 10      # 何かで固まっても10分で打ち切る（無料枠を無駄にしない）
     steps:
-      - uses: actions/checkout@v4          # このリポジトリのコードを借りたコンピュータにコピー
-      - uses: actions/setup-python@v5      # Python を用意
+      - uses: actions/checkout@v5          # このリポジトリのコードを借りたコンピュータにコピー
+      - uses: actions/setup-python@v6      # Python を用意
         with:
           python-version: "3.14"           # 手元の .venv と同じバージョン
           cache: pip                       # ライブラリのダウンロードを次回から使い回して速くする
